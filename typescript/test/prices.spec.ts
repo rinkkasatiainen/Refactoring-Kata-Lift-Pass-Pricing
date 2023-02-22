@@ -1,8 +1,8 @@
-import {createApp} from "../src/prices"
 import request from 'supertest'
-import {expect} from 'chai';
-import {Express} from "express";
-import {Connection} from "mysql2/promise";
+import {expect} from 'chai'
+import {Express} from 'express'
+import {Connection} from 'mysql2/promise'
+import {createApp} from '../src/prices'
 
 describe('prices', () => {
 
@@ -13,15 +13,18 @@ describe('prices', () => {
         ({app, connection} = await createApp())
         await request(app).put('/prices?type=1jour&cost=35').expect(200)
         await request(app).put('/prices?type=night&cost=19').expect(200)
-    });
+    })
 
     afterEach(async () => {
-        await connection!.end()
-    });
+        if(connection){
+            await connection.end()
+        }
+    })
 
     it('default cost', async () => {
-        const {body} = await request(app)
+        const prices: request.Response = await request(app)
             .get('/prices?type=1jour')
+        const body = prices.body as unknown as { cost: number }
 
         expect(body.cost).equal(35)
     });
@@ -37,16 +40,18 @@ describe('prices', () => {
     ]
         .forEach(({age, expectedCost}) => {
             it('works for all ages', async () => {
-                const {body} = await request(app)
+                const prices: request.Response = await request(app)
                     .get(`/prices?type=1jour&age=${age}`)
+                const body = prices.body as unknown as { cost: number }
 
                 expect(body.cost).equal(expectedCost)
-            });
-        });
+            })
+        })
 
     xit('default night cost', async () => {
-        const {body} = await request(app)
+        const prices: request.Response = await request(app)
             .get('/prices?type=night')
+        const body = prices.body as unknown as { cost: number }
 
         expect(body.cost).equal(19)
     });
@@ -60,11 +65,12 @@ describe('prices', () => {
     ]
         .forEach(({age, expectedCost}) => {
             it('works for night passes', async () => {
-                const {body} = await request(app)
+                const prices: request.Response = await request(app)
                     .get(`/prices?type=night&age=${age}`)
+                const body = prices.body as unknown as { cost: number }
 
                 expect(body.cost).equal(expectedCost)
-            });
+            })
         });
 
     [
@@ -75,13 +81,14 @@ describe('prices', () => {
     ]
         .forEach(({age, expectedCost, date}) => {
             it('works for monday deals', async () => {
-                const {body} = await request(app)
+                const prices: request.Response = await request(app)
                     .get(`/prices?type=1jour&age=${age}&date=${date}`)
+                const body = prices.body as unknown as { cost: number }
 
                 expect(body.cost).equal(expectedCost)
-            });
+            })
         })
 
     // TODO 2-4, and 5, 6 day pass
 
-});
+})

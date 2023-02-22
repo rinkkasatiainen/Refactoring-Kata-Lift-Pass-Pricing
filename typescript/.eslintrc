@@ -34,7 +34,7 @@
         "default": "array-simple"
       }
     ],
-    "@typescript-eslint/ban-ts-comment": "error",
+    "@typescript-eslint/ban-ts-comment": "warn",
     "@typescript-eslint/ban-types": [
       "error",
       {
@@ -175,6 +175,7 @@
       }
     ],
     "mocha/no-mocha-arrows": "off",
+    "mocha/no-setup-in-describe": "off",
     "new-parens": "error",
     "no-array-constructor": "off",
     "no-async-promise-executor": "error",
