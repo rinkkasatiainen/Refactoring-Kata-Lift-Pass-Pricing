@@ -1,10 +1,13 @@
 import {createApp} from "../src/prices"
 import request from 'supertest'
 import {expect} from 'chai';
+import {Express} from "express";
+import {Connection} from "mysql2/promise";
 
 describe('prices', () => {
 
-    let app, connection
+    let app: Express | undefined
+    let connection: Connection | undefined
 
     beforeEach(async () => {
         ({app, connection} = await createApp())
@@ -13,7 +16,7 @@ describe('prices', () => {
     });
 
     afterEach(async () => {
-        await connection.end()
+        await connection!.end()
     });
 
     it('default cost', async () => {

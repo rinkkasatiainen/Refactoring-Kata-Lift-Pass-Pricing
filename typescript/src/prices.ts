@@ -4,13 +4,13 @@ import mysql from "mysql2/promise"
 async function createApp() {
     const app = express()
 
-    let connectionOptions = {host: 'localhost', user: 'root', database: 'lift_pass', password: 'mysql'}
+    let connectionOptions = { host: 'localhost', user: 'root', database: 'lift_pass', password: 'mysql'}
     const connection = await mysql.createConnection(connectionOptions)
 
     app.put('/prices', async (req, res) => {
         const liftPassCost = req.query.cost
         const liftPassType = req.query.type
-        const [rows, fields] = await connection.query(
+        await connection.query(
             'INSERT INTO `base_price` (type, cost) VALUES (?, ?) ' +
             'ON DUPLICATE KEY UPDATE cost = ?',
             [liftPassType, liftPassCost, liftPassCost]);
@@ -18,6 +18,7 @@ async function createApp() {
         res.json()
     })
     app.get('/prices', async (req, res) => {
+        // @ts-ignore
         const result = (await connection.query(
             'SELECT cost FROM `base_price` ' +
             'WHERE `type` = ? ',
