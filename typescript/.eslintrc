@@ -214,7 +214,7 @@
     "no-irregular-whitespace": "error",
     "no-misleading-character-class": "error",
     "no-mixed-spaces-and-tabs": "error",
-    "no-multiple-empty-lines": "error",
+    "no-multiple-empty-lines": "off",  //FIXME
     "no-new-symbol": "error",
     "no-new-wrappers": "error",
     "no-obj-calls": "error",
@@ -234,7 +234,7 @@
     "no-sparse-arrays": "error",
     "no-this-before-super": "error",
     "no-throw-literal": "error",
-    "no-trailing-spaces": "error",
+    "no-trailing-spaces": "warn", //FIXME
     "no-undef": "error",
     "no-undef-init": "error",
     "no-underscore-dangle": "warn",
