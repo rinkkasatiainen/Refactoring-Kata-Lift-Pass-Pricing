@@ -1,7 +1,13 @@
 import express from 'express'
-import mysql from 'mysql2/promise'
+import mysql, {Connection} from 'mysql2/promise'
 
 interface BasePrice { cost: number }
+// @ts-ignore
+const getBasePrice = async (liftPassType: string, conn: Connection) => ((await conn.query(
+    'SELECT cost FROM `base_price` ' +
+    'WHERE `type` = ? ',
+    [liftPassType]))[0][0] as unknown as BasePrice)
+
 
 async function createApp() {
     const app = express()
@@ -20,18 +26,15 @@ async function createApp() {
 
         res.json()
     })
+
+
+
+
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     app.get('/prices', async (req, res) => {
-        // @ts-ignore
-        const getSomething = async (liftPassType: string) => ((await connection.query(
-            'SELECT cost FROM `base_price` ' +
-            'WHERE `type` = ? ',
-            [liftPassType]))[0][0] as unknown as BasePrice)
 
+        const result:  BasePrice = await getBasePrice(req.query.type, connection)
 
-
-
-        const result:  BasePrice = await getSomething(req.query.type)
         if (req.query.age as unknown as number < 6) {
             res.json({cost: 0})
         } else {
