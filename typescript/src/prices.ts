@@ -12,7 +12,7 @@ interface Holiday {
 }
 
 type GetBasePrice = (liftPassType: string) => Promise<BasePrice>
-type GetHolidays = () => Promise<Array<{holiday: Holiday}>>
+type GetHolidays = () => Promise<Array<{ holiday: Holiday }>>
 
 const getBasePrice: (conn: Connection) => GetBasePrice =
     // @ts-ignore
@@ -54,11 +54,16 @@ async function createApp() {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     app.get('/prices', async (req, res) => {
         // TODO: precondition check to see all data is given in the request.
+        // TODO: TS checks says all these are actually needed by the code. And there is an unnecessary if-clause.
         // @ts-ignore
         const liftPassType: string = req.query.type
+        // @ts-ignore
+        const age: number = req.query.age
+        // @ts-ignore
+        const date: string = req.query.date
 
         let result: { cost: number } | undefined
-        if (req.query.age as unknown as number < 6) {
+        if (age < 6) {
             result = {cost: 0}
         } else {
             const basePrice: BasePrice = await basePriceFor(liftPassType)
@@ -71,8 +76,8 @@ async function createApp() {
                 for (const row of holidays) {
                     // eslint-disable-next-line max-len
                     const holiday = row.holiday as unknown as Holiday
-                    if (req.query.date) {
-                        const d = new Date(req.query.date as string)
+                    if (date) {
+                        const d = new Date(date)
                         if (d.getFullYear() === holiday.getFullYear()
                             && d.getMonth() === holiday.getMonth()
                             && d.getDate() === holiday.getDate()) {
@@ -80,17 +85,17 @@ async function createApp() {
                         }
                     }
                 }
-                if (!isHoliday && new Date(req.query.date as string).getDay() === 1) {
+                if (!isHoliday && new Date(date).getDay() === 1) {
                     reduction = 35
                 }
-                if (req.query.age as unknown as number < 15) {
-                    result =  {cost: Math.ceil(basePrice.cost * .7)}
+                if (age < 15) {
+                    result = {cost: Math.ceil(basePrice.cost * .7)}
                 } else {
-                    if (req.query.age === undefined) {
+                    if (age === undefined) {
                         const cost = basePrice.cost * (1 - reduction / 100)
                         result = {cost: Math.ceil(cost)}
                     } else {
-                        if (req.query.age as unknown as number > 64) {
+                        if (age > 64) {
                             const cost = basePrice.cost * .75 * (1 - reduction / 100)
                             result = {cost: Math.ceil(cost)}
                         } else {
@@ -100,8 +105,8 @@ async function createApp() {
                     }
                 }
             } else {
-                if (req.query.age as unknown as number >= 6) {
-                    if (req.query.age as unknown as number > 64) {
+                if (age >= 6) {
+                    if (age > 64) {
                         result = {cost: Math.ceil(basePrice.cost * .4)}
                     } else {
                         result = basePrice
