@@ -57,10 +57,11 @@ async function createApp() {
         // @ts-ignore
         const liftPassType: string = req.query.type
 
+        let result: { cost: number } | undefined
         if (req.query.age as unknown as number < 6) {
-            res.json({cost: 0})
+            result = {cost: 0}
         } else {
-            const result: BasePrice = await basePriceFor(liftPassType)
+            const basePrice: BasePrice = await basePriceFor(liftPassType)
 
             if (liftPassType !== 'night') {
                 const holidays = await listHolidays()
@@ -83,33 +84,34 @@ async function createApp() {
                     reduction = 35
                 }
                 if (req.query.age as unknown as number < 15) {
-                    res.json({cost: Math.ceil(result.cost * .7)})
+                    result =  {cost: Math.ceil(basePrice.cost * .7)}
                 } else {
                     if (req.query.age === undefined) {
-                        const cost = result.cost * (1 - reduction / 100)
-                        res.json({cost: Math.ceil(cost)})
+                        const cost = basePrice.cost * (1 - reduction / 100)
+                        result = {cost: Math.ceil(cost)}
                     } else {
                         if (req.query.age as unknown as number > 64) {
-                            const cost = result.cost * .75 * (1 - reduction / 100)
-                            res.json({cost: Math.ceil(cost)})
+                            const cost = basePrice.cost * .75 * (1 - reduction / 100)
+                            result = {cost: Math.ceil(cost)}
                         } else {
-                            const cost = result.cost * (1 - reduction / 100)
-                            res.json({cost: Math.ceil(cost)})
+                            const cost = basePrice.cost * (1 - reduction / 100)
+                            result = {cost: Math.ceil(cost)}
                         }
                     }
                 }
             } else {
                 if (req.query.age as unknown as number >= 6) {
                     if (req.query.age as unknown as number > 64) {
-                        res.json({cost: Math.ceil(result.cost * .4)})
+                        result = {cost: Math.ceil(basePrice.cost * .4)}
                     } else {
-                        res.json(result)
+                        result = basePrice
                     }
                 } else {
-                    res.json({cost: 0})
+                    result = {cost: 0}
                 }
             }
         }
+        res.json(result)
     })
     return {app, connection}
 }
