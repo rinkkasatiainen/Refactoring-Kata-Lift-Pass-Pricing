@@ -11,6 +11,13 @@ const getBasePrice = async (liftPassType: string, conn: Connection) => ((await c
     'WHERE `type` = ? ',
     [liftPassType]))[0][0] as unknown as BasePrice)
 
+// @ts-ignore
+const getHolidays: (conn: Connection) => Promise<Array<{holiday: Holiday}>> = async conn => ((await conn.query(
+    'SELECT * FROM `holidays`'
+))[0] as mysql.RowDataPacket[])
+
+
+interface Holiday { getFullYear: () => number; getMonth: () => number; getDate: () => number }
 
 async function createApp() {
     const app = express()
@@ -37,20 +44,21 @@ async function createApp() {
         // TODO: precondition check to see all data is given in the request.
         // @ts-ignore
         const liftPassType: string = req.query.type
+
         if (req.query.age as unknown as number < 6) {
             res.json({cost: 0})
         } else {
             // Moved result to smaller scope
             const result: BasePrice = await getBasePrice(liftPassType, connection)
             if (liftPassType !== 'night') {
-                const holidays = (await connection.query(
-                    'SELECT * FROM `holidays`'
-                ))[0] as mysql.RowDataPacket[]
+
+                const holidays = await getHolidays(connection)
+
                 let isHoliday
                 let reduction = 0
                 for (const row of holidays) {
                     // eslint-disable-next-line max-len
-                    const holiday = row.holiday as unknown as { getFullYear: () => number; getMonth: () => number; getDate: () => number }
+                    const holiday = row.holiday as unknown as Holiday
                     if (req.query.date) {
                         const d = new Date(req.query.date as string)
                         if (d.getFullYear() === holiday.getFullYear()
@@ -91,7 +99,6 @@ async function createApp() {
                 }
             }
         }
-
     })
     return {app, connection}
 }
