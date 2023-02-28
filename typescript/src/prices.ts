@@ -5,25 +5,38 @@ interface BasePrice {
     cost: number;
 }
 
-// @ts-ignore
-const getBasePrice = async (liftPassType: string, conn: Connection) => ((await conn.query(
-    'SELECT cost FROM `base_price` ' +
-    'WHERE `type` = ? ',
-    [liftPassType]))[0][0] as unknown as BasePrice)
+interface Holiday {
+    getFullYear: () => number;
+    getMonth: () => number;
+    getDate: () => number;
+}
 
-// @ts-ignore
-const getHolidays: (conn: Connection) => Promise<Array<{holiday: Holiday}>> = async conn => ((await conn.query(
-    'SELECT * FROM `holidays`'
-))[0] as mysql.RowDataPacket[])
+type GetBasePrice = (liftPassType: string) => Promise<BasePrice>
+type GetHolidays = () => Promise<Array<{holiday: Holiday}>>
+
+const getBasePrice: (conn: Connection) => GetBasePrice =
+    // @ts-ignore
+    conn => async (liftPassType: string) => ((await conn.query(
+        'SELECT cost FROM `base_price` ' +
+        'WHERE `type` = ? ',
+        [liftPassType]))[0][0] as unknown as BasePrice)
 
 
-interface Holiday { getFullYear: () => number; getMonth: () => number; getDate: () => number }
+const getHolidays: (conn: Connection) => GetHolidays =
+    // @ts-ignore
+    conn => async () => (await conn.query(
+        'SELECT * FROM `holidays`'
+    ))[0] as mysql.RowDataPacket[]
 
 async function createApp() {
     const app = express()
 
     const connectionOptions = {host: 'localhost', user: 'root', database: 'lift_pass', password: 'mysql'}
     const connection = await mysql.createConnection(connectionOptions)
+
+    // These look a lot like repositories
+    const basePriceFor = getBasePrice(connection)
+    const listHolidays = getHolidays(connection)
 
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     app.put('/prices', async (req, res) => {
@@ -40,7 +53,6 @@ async function createApp() {
 
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     app.get('/prices', async (req, res) => {
-
         // TODO: precondition check to see all data is given in the request.
         // @ts-ignore
         const liftPassType: string = req.query.type
@@ -48,11 +60,10 @@ async function createApp() {
         if (req.query.age as unknown as number < 6) {
             res.json({cost: 0})
         } else {
-            // Moved result to smaller scope
-            const result: BasePrice = await getBasePrice(liftPassType, connection)
-            if (liftPassType !== 'night') {
+            const result: BasePrice = await basePriceFor(liftPassType)
 
-                const holidays = await getHolidays(connection)
+            if (liftPassType !== 'night') {
+                const holidays = await listHolidays()
 
                 let isHoliday
                 let reduction = 0
