@@ -33,12 +33,18 @@ async function createApp() {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     app.get('/prices', async (req, res) => {
 
-        const result:  BasePrice = await getBasePrice(req.query.type, connection)
+        // TODO: precondition check to see all data is given in the request.
+        // @ts-ignore
+        const liftPassType: string = req.query.type
+        const result:  BasePrice = await getBasePrice(liftPassType, connection)
+
+
+
 
         if (req.query.age as unknown as number < 6) {
             res.json({cost: 0})
         } else {
-            if (req.query.type !== 'night') {
+            if (liftPassType !== 'night') {
                 const holidays = (await connection.query(
                     'SELECT * FROM `holidays`'
                 ))[0] as mysql.RowDataPacket[]
