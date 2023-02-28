@@ -1,7 +1,10 @@
 import express from 'express'
 import mysql, {Connection} from 'mysql2/promise'
 
-interface BasePrice { cost: number }
+interface BasePrice {
+    cost: number;
+}
+
 // @ts-ignore
 const getBasePrice = async (liftPassType: string, conn: Connection) => ((await conn.query(
     'SELECT cost FROM `base_price` ' +
@@ -28,22 +31,17 @@ async function createApp() {
     })
 
 
-
-
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     app.get('/prices', async (req, res) => {
 
         // TODO: precondition check to see all data is given in the request.
         // @ts-ignore
         const liftPassType: string = req.query.type
-        const result:  BasePrice = await getBasePrice(liftPassType, connection)
-
-
-
-
         if (req.query.age as unknown as number < 6) {
             res.json({cost: 0})
         } else {
+            // Moved result to smaller scope
+            const result: BasePrice = await getBasePrice(liftPassType, connection)
             if (liftPassType !== 'night') {
                 const holidays = (await connection.query(
                     'SELECT * FROM `holidays`'
@@ -93,6 +91,7 @@ async function createApp() {
                 }
             }
         }
+
     })
     return {app, connection}
 }
