@@ -1,7 +1,7 @@
 import express from 'express'
 import mysql, {Connection} from 'mysql2/promise'
 
-interface BasePrice {
+interface TicketPrice {
     cost: number;
 }
 
@@ -11,16 +11,19 @@ interface Holiday {
     getDate: () => number;
 }
 
-type GetBasePrice = (liftPassType: string) => Promise<BasePrice>
+// Repository functions
+type GetBasePrice = (liftPassType: string) => Promise<TicketPrice>
 type GetHolidays = () => Promise<Array<{ holiday: Holiday }>>
+
+// Domain functions
+type CalculatesPrice = (liftPassType: string, age: number, date: string) => Promise<TicketPrice>
 
 const getBasePrice: (conn: Connection) => GetBasePrice =
     // @ts-ignore
     conn => async (liftPassType: string) => ((await conn.query(
         'SELECT cost FROM `base_price` ' +
         'WHERE `type` = ? ',
-        [liftPassType]))[0][0] as unknown as BasePrice)
-
+        [liftPassType]))[0][0] as unknown as TicketPrice)
 
 const getHolidays: (conn: Connection) => GetHolidays =
     // @ts-ignore
@@ -29,13 +32,12 @@ const getHolidays: (conn: Connection) => GetHolidays =
     ))[0] as mysql.RowDataPacket[]
 
 const getPrice:
-    (basePriceFor: GetBasePrice, listHolidays: GetHolidays, liftPassType: string, age: number, date: string) =>
-        Promise<BasePrice> =
-    async (basePriceFor, listHolidays,  liftPassType, age, date) => {
+    (basePriceFor: GetBasePrice, listHolidays: GetHolidays) => CalculatesPrice =
+    (basePriceFor, listHolidays) => async (liftPassType, age, date) => {
         if (age < 6) {
             return {cost: 0}
         } else {
-            const basePrice: BasePrice = await basePriceFor(liftPassType)
+            const basePrice: TicketPrice = await basePriceFor(liftPassType)
 
             if (liftPassType !== 'night') {
                 const holidays = await listHolidays()
@@ -97,6 +99,9 @@ async function createApp() {
     const basePriceFor = getBasePrice(connection)
     const listHolidays = getHolidays(connection)
 
+    // This looks like domain concept
+    const priceForTicket = getPrice(basePriceFor, listHolidays)
+
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     app.put('/prices', async (req, res) => {
         const liftPassCost = req.query.cost
@@ -122,7 +127,7 @@ async function createApp() {
         const date: string = req.query.date
 
         // This looks like a Pure Function that has some domain logic.
-        const result: BasePrice  = await getPrice(basePriceFor, listHolidays, liftPassType, age, date)
+        const result: TicketPrice = await priceForTicket(liftPassType, age, date)
         res.json(result)
     })
     return {app, connection}
