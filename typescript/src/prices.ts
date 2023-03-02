@@ -1,6 +1,6 @@
 import express from 'express'
 import mysql, {Connection} from 'mysql2/promise'
-import {GetBasePrice, GetHolidays, getPrice, TicketPrice} from './getPrice'
+import {GetBasePrice, GetHolidays, getPrice, TicketPrice} from './domain/get-price'
 
 const getBasePrice: (conn: Connection) => GetBasePrice =
     // @ts-ignore
@@ -40,7 +40,6 @@ async function createApp() {
         res.json()
     })
 
-
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     app.get('/prices', async (req, res) => {
         // TODO: precondition check to see all data is given in the request.
@@ -54,6 +53,8 @@ async function createApp() {
 
         // This looks like a Pure Function that has some domain logic.
         const result: TicketPrice = await priceForTicket(liftPassType, age, date)
+
+        // The side effect of the function.
         res.json(result)
     })
     return {app, connection}
