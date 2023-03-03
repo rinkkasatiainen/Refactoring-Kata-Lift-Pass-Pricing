@@ -17,13 +17,23 @@ type CalculatesPrice = (liftPassType: string, age: number, date: string) => Prom
 
 
 interface Ticket {
-    forDate: (date: Date) => TicketPrice;
+    withBasePrice: (basePrice: TicketPrice) => {
+        forDate: (date: Date) => TicketPrice;
+    };
 }
 
 const getTicket: (liftPassType: string, age: number) => Ticket | undefined =
-    (_liftPassType: string, age: number) => {
-        if( age < 6){
-            return { forDate: () => ({ cost: 0}) }
+    (liftPassType: string, age: number) => {
+        if (age < 6) {
+            const newVar: Ticket = {withBasePrice: () => ({forDate: () => ({cost: 0})})}
+            return newVar
+        }
+        if (liftPassType === 'night') {
+            return {
+                withBasePrice: basePrice => ({
+                    forDate: () => age > 64 ? { cost: Math.ceil(basePrice.cost * .4)} : basePrice,
+                }),
+            }
         }
         return undefined
     }
@@ -31,15 +41,13 @@ const getTicket: (liftPassType: string, age: number) => Ticket | undefined =
 export const getPrice:
     (basePriceFor: GetBasePrice, listHolidays: GetHolidays) => CalculatesPrice =
     (basePriceFor, listHolidays) => async (liftPassType, age, date) => {
+        const basePrice: TicketPrice = await basePriceFor(liftPassType)
         // Create a new Bonsai tree branch
         const ticket = getTicket(liftPassType, age)
         if (ticket !== undefined) {
             // if there is a ticket, use that. otherwise, use the legacy code path
-            return ticket.forDate(new Date(date))
+            return ticket.withBasePrice(basePrice).forDate(new Date(date))
         }
-        // age is never under 6
-        // eslint-disable-next-line no-constant-condition
-        const basePrice: TicketPrice = await basePriceFor(liftPassType)
         if (liftPassType !== 'night') {
             const holidays = await listHolidays()
 
