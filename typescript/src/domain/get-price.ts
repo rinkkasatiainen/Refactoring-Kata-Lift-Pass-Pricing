@@ -31,26 +31,17 @@ const getTicket: (liftPassType: string, age: number) => Ticket | undefined =
         if (liftPassType === 'night') {
             return {
                 withBasePrice: basePrice => ({
-                    forDate: () => age > 64 ? { cost: Math.ceil(basePrice.cost * .4)} : basePrice,
+                    forDate: () => age > 64 ? {cost: Math.ceil(basePrice.cost * .4)} : basePrice,
                 }),
             }
         }
         return undefined
     }
 
-export const getPrice:
-    (basePriceFor: GetBasePrice, listHolidays: GetHolidays) => CalculatesPrice =
-    (basePriceFor, listHolidays) => async (liftPassType, age, date) => {
-        const basePrice: TicketPrice = await basePriceFor(liftPassType)
-        // Create a new Bonsai tree branch
-        const ticket = getTicket(liftPassType, age)
-        if (ticket !== undefined) {
-            // if there is a ticket, use that. otherwise, use the legacy code path
-            return ticket.withBasePrice(basePrice).forDate(new Date(date))
-        }
+const isHolidayOn: (listHolidays: GetHolidays) => (date: string) => Promise<boolean> =
+    listHolidays => async (date: string) => {
         const holidays = await listHolidays()
-        let isHoliday
-        let reduction = 0
+        let isHoliday = false
         for (const row of holidays) {
             // eslint-disable-next-line max-len
             const holiday = row.holiday as unknown as Holiday
@@ -63,9 +54,26 @@ export const getPrice:
                 }
             }
         }
+        return isHoliday
+    }
+
+export const getPrice:
+    (basePriceFor: GetBasePrice, listHolidays: GetHolidays) => CalculatesPrice =
+    (basePriceFor, listHolidays) => async (liftPassType, age, date) => {
+        const basePrice: TicketPrice = await basePriceFor(liftPassType)
+        // Create a new Bonsai tree branch
+        const ticket = getTicket(liftPassType, age)
+        if (ticket !== undefined) {
+            // if there is a ticket, use that. otherwise, use the legacy code path
+            return ticket.withBasePrice(basePrice).forDate(new Date(date))
+        }
+        let reduction = 0
+
+        const isHoliday = await isHolidayOn(listHolidays)(date)
         if (!isHoliday && new Date(date).getDay() === 1) {
             reduction = 35
         }
+
         if (age < 15) {
             return {cost: Math.ceil(basePrice.cost * .7)}
         } else {
