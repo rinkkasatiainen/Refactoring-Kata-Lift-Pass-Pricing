@@ -3,7 +3,7 @@ export interface TicketPrice {
     cost: number;
 }
 
-interface Holiday {
+export interface Holiday {
     getFullYear: () => number;
     getMonth: () => number;
     getDate: () => number;
@@ -38,28 +38,10 @@ const getTicket: (liftPassType: string, age: number) => Ticket | undefined =
         return undefined
     }
 
-const isHolidayOn: (listHolidays: GetHolidays) => (date: string) => Promise<boolean> =
-    listHolidays => async (date: string) => {
-        const holidays = await listHolidays()
-        let isHoliday = false
-        for (const row of holidays) {
-            // eslint-disable-next-line max-len
-            const holiday = row.holiday as unknown as Holiday
-            if (date) {
-                const d = new Date(date)
-                if (d.getFullYear() === holiday.getFullYear()
-                    && d.getMonth() === holiday.getMonth()
-                    && d.getDate() === holiday.getDate()) {
-                    isHoliday = true
-                }
-            }
-        }
-        return isHoliday
-    }
-
+export type IsHolidayOn = (date: string) => Promise<boolean>;
 export const getPrice:
-    (basePriceFor: GetBasePrice, listHolidays: GetHolidays) => CalculatesPrice =
-    (basePriceFor, listHolidays) => async (liftPassType, age, date) => {
+    (basePriceFor: GetBasePrice, holidayOn: IsHolidayOn) => CalculatesPrice =
+    (basePriceFor, holidayOn: IsHolidayOn) => async (liftPassType, age, date) => {
         const basePrice: TicketPrice = await basePriceFor(liftPassType)
         // Create a new Bonsai tree branch
         const ticket = getTicket(liftPassType, age)
@@ -69,7 +51,7 @@ export const getPrice:
         }
         let reduction = 0
 
-        const isHoliday = await isHolidayOn(listHolidays)(date)
+        const isHoliday = await holidayOn(date)
         if (!isHoliday && new Date(date).getDay() === 1) {
             reduction = 35
         }

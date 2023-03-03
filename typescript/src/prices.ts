@@ -1,6 +1,6 @@
 import express from 'express'
 import mysql, {Connection} from 'mysql2/promise'
-import {GetBasePrice, GetHolidays, getPrice, TicketPrice} from './domain/get-price'
+import {GetBasePrice, GetHolidays, getPrice, Holiday, TicketPrice} from './domain/get-price'
 
 const getBasePrice: (conn: Connection) => GetBasePrice =
     // @ts-ignore
@@ -26,7 +26,7 @@ async function createApp() {
     const listHolidays = getHolidays(connection)
 
     // This looks like domain concept
-    const priceForTicket = getPrice(basePriceFor, listHolidays)
+    const priceForTicket = getPrice(basePriceFor, isHolidayOn(listHolidays))
 
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     app.put('/prices', async (req, res) => {
@@ -61,3 +61,21 @@ async function createApp() {
 }
 
 export {createApp}
+export const isHolidayOn: (listHolidays: GetHolidays) => (date: string) => Promise<boolean> =
+    listHolidays => async (date: string) => {
+        const holidays = await listHolidays()
+        let isHoliday = false
+        for (const row of holidays) {
+            // eslint-disable-next-line max-len
+            const holiday = row.holiday as unknown as Holiday
+            if (date) {
+                const d = new Date(date)
+                if (d.getFullYear() === holiday.getFullYear()
+                    && d.getMonth() === holiday.getMonth()
+                    && d.getDate() === holiday.getDate()) {
+                    isHoliday = true
+                }
+            }
+        }
+        return isHoliday
+    }
