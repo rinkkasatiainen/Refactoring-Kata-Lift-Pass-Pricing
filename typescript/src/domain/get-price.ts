@@ -31,65 +31,56 @@ const getTicket: (liftPassType: string, age: number) => Ticket | undefined =
 export const getPrice:
     (basePriceFor: GetBasePrice, listHolidays: GetHolidays) => CalculatesPrice =
     (basePriceFor, listHolidays) => async (liftPassType, age, date) => {
-
         // Create a new Bonsai tree branch
         const ticket = getTicket(liftPassType, age)
         if (ticket !== undefined) {
             // if there is a ticket, use that. otherwise, use the legacy code path
             return ticket.forDate(new Date(date))
         }
+        // age is never under 6
+        // eslint-disable-next-line no-constant-condition
+        const basePrice: TicketPrice = await basePriceFor(liftPassType)
+        if (liftPassType !== 'night') {
+            const holidays = await listHolidays()
 
-        if (age < 6) {
-            return {cost: 0}
-        } else {
-            const basePrice: TicketPrice = await basePriceFor(liftPassType)
-
-            if (liftPassType !== 'night') {
-                const holidays = await listHolidays()
-
-                let isHoliday
-                let reduction = 0
-                for (const row of holidays) {
-                    // eslint-disable-next-line max-len
-                    const holiday = row.holiday as unknown as Holiday
-                    if (date) {
-                        const d = new Date(date)
-                        if (d.getFullYear() === holiday.getFullYear()
-                            && d.getMonth() === holiday.getMonth()
-                            && d.getDate() === holiday.getDate()) {
-                            isHoliday = true
-                        }
+            let isHoliday
+            let reduction = 0
+            for (const row of holidays) {
+                // eslint-disable-next-line max-len
+                const holiday = row.holiday as unknown as Holiday
+                if (date) {
+                    const d = new Date(date)
+                    if (d.getFullYear() === holiday.getFullYear()
+                        && d.getMonth() === holiday.getMonth()
+                        && d.getDate() === holiday.getDate()) {
+                        isHoliday = true
                     }
                 }
-                if (!isHoliday && new Date(date).getDay() === 1) {
-                    reduction = 35
-                }
-                if (age < 15) {
-                    return {cost: Math.ceil(basePrice.cost * .7)}
+            }
+            if (!isHoliday && new Date(date).getDay() === 1) {
+                reduction = 35
+            }
+            if (age < 15) {
+                return {cost: Math.ceil(basePrice.cost * .7)}
+            } else {
+                if (age === undefined) {
+                    const cost = basePrice.cost * (1 - reduction / 100)
+                    return {cost: Math.ceil(cost)}
                 } else {
-                    if (age === undefined) {
-                        const cost = basePrice.cost * (1 - reduction / 100)
+                    if (age > 64) {
+                        const cost = basePrice.cost * .75 * (1 - reduction / 100)
                         return {cost: Math.ceil(cost)}
                     } else {
-                        if (age > 64) {
-                            const cost = basePrice.cost * .75 * (1 - reduction / 100)
-                            return {cost: Math.ceil(cost)}
-                        } else {
-                            const cost = basePrice.cost * (1 - reduction / 100)
-                            return {cost: Math.ceil(cost)}
-                        }
+                        const cost = basePrice.cost * (1 - reduction / 100)
+                        return {cost: Math.ceil(cost)}
                     }
                 }
+            }
+        } else {
+            if (age > 64) {
+                return {cost: Math.ceil(basePrice.cost * .4)}
             } else {
-                if (age >= 6) {
-                    if (age > 64) {
-                        return {cost: Math.ceil(basePrice.cost * .4)}
-                    } else {
-                        return basePrice
-                    }
-                } else {
-                    return {cost: 0}
-                }
+                return basePrice
             }
         }
     }
