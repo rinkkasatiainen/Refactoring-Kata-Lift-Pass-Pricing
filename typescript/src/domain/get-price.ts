@@ -14,9 +14,31 @@ export type GetBasePrice = (liftPassType: string) => Promise<TicketPrice>
 export type GetHolidays = () => Promise<Array<{ holiday: Holiday }>>
 // Domain functions
 type CalculatesPrice = (liftPassType: string, age: number, date: string) => Promise<TicketPrice>
+
+
+interface Ticket {
+    forDate: (date: Date) => TicketPrice;
+}
+
+const getTicket: (liftPassType: string, age: number) => Ticket | undefined =
+    (_liftPassType: string, age: number) => {
+        if( age < 6){
+            return { forDate: () => ({ cost: 0}) }
+        }
+        return undefined
+    }
+
 export const getPrice:
     (basePriceFor: GetBasePrice, listHolidays: GetHolidays) => CalculatesPrice =
     (basePriceFor, listHolidays) => async (liftPassType, age, date) => {
+
+        // Create a new Bonsai tree branch
+        const ticket = getTicket(liftPassType, age)
+        if (ticket !== undefined) {
+            // if there is a ticket, use that. otherwise, use the legacy code path
+            return ticket.forDate(new Date(date))
+        }
+
         if (age < 6) {
             return {cost: 0}
         } else {
