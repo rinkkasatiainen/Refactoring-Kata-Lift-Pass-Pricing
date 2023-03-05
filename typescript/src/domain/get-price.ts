@@ -35,6 +35,14 @@ const getTicket: (liftPassType: string, age: number) => Ticket | undefined =
                 }),
             }
         }
+        if ( age < 15) {
+            return {
+                withBasePrice: basePrice => ({
+                    forDate: () => ({ cost: Math.ceil(basePrice.cost * .7)}),
+                }),
+            }
+
+        }
         return undefined
     }
 
@@ -50,26 +58,16 @@ export const getPrice:
             return ticket.withBasePrice(basePrice).forDate(new Date(date))
         }
         let reduction = 0
-
         const isHoliday = await holidayOn(date)
         if (!isHoliday && new Date(date).getDay() === 1) {
             reduction = 35
         }
 
-        if (age < 15) {
-            return {cost: Math.ceil(basePrice.cost * .7)}
+        if (age > 64) {
+            const cost = basePrice.cost * .75 * (1 - reduction / 100)
+            return {cost: Math.ceil(cost)}
         } else {
-            if (age === undefined) {
-                const cost = basePrice.cost * (1 - reduction / 100)
-                return {cost: Math.ceil(cost)}
-            } else {
-                if (age > 64) {
-                    const cost = basePrice.cost * .75 * (1 - reduction / 100)
-                    return {cost: Math.ceil(cost)}
-                } else {
-                    const cost = basePrice.cost * (1 - reduction / 100)
-                    return {cost: Math.ceil(cost)}
-                }
-            }
+            const cost = basePrice.cost * (1 - reduction / 100)
+            return {cost: Math.ceil(cost)}
         }
     }
