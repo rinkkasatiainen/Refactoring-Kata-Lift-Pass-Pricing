@@ -1,5 +1,5 @@
 import {Ticket, TicketPrice} from '../ticket'
-import {IsHolidayOn} from '../get-price'
+import {IsHolidayOn} from '../holiday'
 
 export class SeniorTickets implements Ticket {
 

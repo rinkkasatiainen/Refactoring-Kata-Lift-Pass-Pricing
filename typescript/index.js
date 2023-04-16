@@ -1,4 +1,4 @@
-const { createApp } = require('./src/prices')
+const { createApp } = require('./src/routes/prices')
 
 createApp().
     then(({ app, connection }) => app.listen(5010))

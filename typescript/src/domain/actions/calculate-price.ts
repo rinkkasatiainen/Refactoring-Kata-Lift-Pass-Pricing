@@ -1,15 +1,13 @@
 // Domain concepts - value objects
-import {Ticket, TicketPrice} from './ticket'
-import {Holiday} from './holiday'
-import {ChildUnder6} from './tickets/child-under6'
-import {NightPass} from './tickets/night-pass'
-import {KidsTickets} from './tickets/kids-tickets'
-import {SeniorTickets} from './tickets/senior-tickets'
+import {Ticket, TicketPrice} from '../ticket'
+import {ChildTickets} from '../tickets/child-tickets'
+import {NightPass} from '../tickets/night-pass'
+import {KidsTickets} from '../tickets/kids-tickets'
+import {SeniorTickets} from '../tickets/senior-tickets'
+import {GetBasePrice} from '../repositories/get-base-price'
+import {IsHolidayOn} from '../holiday'
+import {isHolidayOn} from './isHolidayOn'
 
-// Repository functions
-export type GetBasePrice = (liftPassType: string) => Promise<TicketPrice>
-export type GetHolidays = () => Promise<Array<{ holiday: Holiday }>>
-export type IsHolidayOn = (date: string) => Promise<boolean>;
 // Domain functions
 type CalculatesPrice = (liftPassType: string, age: number, date: string) => Promise<TicketPrice>
 
@@ -35,7 +33,7 @@ class NormalTicket implements Ticket {
 const getTicket: (isHolidayOn: IsHolidayOn) => (liftPassType: string, age: number) => Ticket =
     isHolidayOn => (liftPassType: string, age: number) => {
         if (age < 6) {
-            return new ChildUnder6()
+            return new ChildTickets()
         }
         if (liftPassType === 'night') {
             return new NightPass(age)
@@ -49,7 +47,7 @@ const getTicket: (isHolidayOn: IsHolidayOn) => (liftPassType: string, age: numbe
         return new NormalTicket(isHolidayOn)
     }
 
-export const getPrice:
+export const calculatePrice:
     (basePriceFor: GetBasePrice, holidayOn: IsHolidayOn) => CalculatesPrice =
     (basePriceFor, holidayOn: IsHolidayOn) => async (liftPassType, age, date) => {
         const basePrice: TicketPrice = await basePriceFor(liftPassType)

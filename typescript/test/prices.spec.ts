@@ -2,7 +2,7 @@ import request from 'supertest'
 import {expect} from 'chai'
 import {Express} from 'express'
 import {Connection} from 'mysql2/promise'
-import {createApp} from '../src/prices'
+import {createApp} from '../src/routes/prices'
 
 describe('prices', () => {
 
