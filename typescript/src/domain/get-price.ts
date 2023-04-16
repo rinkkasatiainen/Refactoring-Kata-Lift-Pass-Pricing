@@ -1,19 +1,10 @@
 // Domain concepts - value objects
-export interface TicketPrice {
-    cost: number;
-}
-
-export interface Holiday {
-    getFullYear: () => number;
-    getMonth: () => number;
-    getDate: () => number;
-}
-
-interface Ticket {
-    withBasePrice: (basePrice: TicketPrice) => {
-        forDate: (date: string) => Promise<TicketPrice>;
-    };
-}
+import {Ticket, TicketPrice} from './ticket'
+import {Holiday} from './holiday'
+import {ChildUnder6} from './tickets/child-under6'
+import {NightPass} from './tickets/night-pass'
+import {KidsTickets} from './tickets/kids-tickets'
+import {SeniorTickets} from './tickets/senior-tickets'
 
 // Repository functions
 export type GetBasePrice = (liftPassType: string) => Promise<TicketPrice>
@@ -22,30 +13,24 @@ export type IsHolidayOn = (date: string) => Promise<boolean>;
 // Domain functions
 type CalculatesPrice = (liftPassType: string, age: number, date: string) => Promise<TicketPrice>
 
-class ChildUnder6 implements Ticket {
-    public withBasePrice(): { forDate: (date: string) => Promise<TicketPrice> } {
-        return {
-            forDate() {
-                return Promise.resolve({cost: 0})
-            },
-        }
+class NormalTicket implements Ticket {
+    public constructor(private readonly isHolidayOn: IsHolidayOn) {
+
     }
-}
-class NightPass implements Ticket {
-    public constructor(private readonly age: number) {
-    }
+
     public withBasePrice(basePrice: TicketPrice): { forDate: (date: string) => Promise<TicketPrice> } {
         return {
-            forDate: () => {
-                if( this.age > 64) {
-                    return Promise.resolve({cost: Math.ceil(basePrice.cost * .4)})
+            forDate: async (date) => {
+                let reduction = 0
+                const isHoliday = await this.isHolidayOn(date)
+                if (!isHoliday && new Date(date).getDay() === 1) {
+                    reduction = 35
                 }
-                return Promise.resolve( basePrice )
+                return ({cost: Math.ceil(basePrice.cost * (1 - reduction / 100))})
             },
         }
     }
 }
-
 
 const getTicket: (isHolidayOn: IsHolidayOn) => (liftPassType: string, age: number) => Ticket =
     isHolidayOn => (liftPassType: string, age: number) => {
@@ -56,38 +41,12 @@ const getTicket: (isHolidayOn: IsHolidayOn) => (liftPassType: string, age: numbe
             return new NightPass(age)
         }
         if (age < 15) {
-            return {
-                withBasePrice: basePrice => ({
-                    forDate: () => Promise.resolve({cost: Math.ceil(basePrice.cost * .7)}),
-                }),
-            }
+            return new KidsTickets()
         }
         if (age > 64) {
-            return {
-                withBasePrice: basePrice => ({
-                    forDate: async (date) => {
-                        let reduction = 0
-                        const isHoliday = await isHolidayOn(date)
-                        if (!isHoliday && new Date(date).getDay() === 1) {
-                            reduction = 35
-                        }
-                        return ({cost: Math.ceil(basePrice.cost * .75 * (1 - reduction / 100))})
-                    },
-                }),
-            }
+            return new SeniorTickets(isHolidayOn)
         }
-        return {
-            withBasePrice: basePrice => ({
-                forDate: async (date) => {
-                    let reduction = 0
-                    const isHoliday = await isHolidayOn(date)
-                    if (!isHoliday && new Date(date).getDay() === 1) {
-                        reduction = 35
-                    }
-                    return ({cost: Math.ceil(basePrice.cost * (1 - reduction / 100))})
-                },
-            }),
-        }
+        return new NormalTicket(isHolidayOn)
     }
 
 export const getPrice:

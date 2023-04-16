@@ -1,6 +1,8 @@
 import express from 'express'
 import mysql, {Connection} from 'mysql2/promise'
-import {GetBasePrice, GetHolidays, getPrice, Holiday, TicketPrice} from './domain/get-price'
+import {GetBasePrice, GetHolidays, getPrice} from './domain/get-price'
+import {TicketPrice} from './domain/ticket'
+import {Holiday} from './domain/holiday'
 
 const getBasePrice: (conn: Connection) => GetBasePrice =
     // @ts-ignore
