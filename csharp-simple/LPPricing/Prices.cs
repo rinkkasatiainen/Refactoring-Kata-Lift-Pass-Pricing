@@ -29,7 +29,7 @@ public class Prices
                 command.ExecuteNonQuery();
             }
 
-            return "";
+            return Task.FromResult("");
         });
 
         app.MapGet("/prices", (context) =>
