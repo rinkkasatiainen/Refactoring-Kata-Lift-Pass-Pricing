@@ -1,0 +1,6 @@
+@LPPricing_HostAddress = http://localhost:5023
+
+GET {{LPPricing_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

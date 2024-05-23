@@ -7,6 +7,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiftPassPricing", "LiftPass
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiftPassPricingTests", "LiftPassPricingTests\LiftPassPricingTests.csproj", "{A85D9A8F-1A34-4F63-BA74-EBCC976B91A4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LPPricing", "LPPricing\LPPricing.csproj", "{21B9F0B2-CE0C-4217-AFA8-FC86D92A8B9B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LPPricingTests", "LPPricingTests\LPPricingTests.csproj", "{2957C35A-1C74-48A6-8C60-EF1EFAFF5506}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
