@@ -12,9 +12,9 @@ describe('prices', () => {
         await request(app).put('/prices?type=night&cost=19').expect(200)
     });
 
-    afterEach(async () => {
-        await connection.end()
-    });
+    // afterEach(async () => {
+    //     await connection.end()
+    // });
 
     it('default cost', async () => {
         const {body} = await request(app)

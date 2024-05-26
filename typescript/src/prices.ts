@@ -1,70 +1,23 @@
 import express from "express";
-import mysql from "mysql2/promise"
-import fs from 'fs';
-
-import path from 'path'
-
-const readDataFromDB = async () => {
-    return new Promise((resolve, reject) => {
-        fs.readFile(path.join(__dirname, 'prices_db.json'), 'utf8', (err, data) => {
-            if (err) {
-                reject(err)
-            }
-            resolve(JSON.parse(data))
-        });
-    })
-}
-
-const readPrices: (type: string) => Promise<{ "cost": number }> = type =>
-    new Promise((resolve, reject) => {
-        readDataFromDB().catch(reject).then(data => {
-            // @ts-ignore
-            resolve(data['prices'][type])
-        })
-    })
-
-const readHolidays: () => Promise<Array<{holiday:Date>> = type =>
-// @ts-ignore
-    new Promise((resolve, reject) => {
-        readDataFromDB().catch(reject).then(data => {
-            // @ts-ignore
-            const holidays: Array<Date> = data.holidays.map(it => ({holiday: new Date(it)}))
-            resolve(holidays)
-        })
-    })
+import {mimicDbConnection} from "./db";
 
 async function createApp() {
     const app = express()
 
-    let connectionOptions = {host: 'localhost', user: 'root', database: 'lift_pass', password: 'mysql'}
-    const connection = await mysql.createConnection(connectionOptions)
+    const connection = await mimicDbConnection();
 
     app.put('/prices', async (req, res) => {
-        const liftPassCost = req.query.cost
-        const liftPassType = req.query.type
-        const [rows, fields] = await connection.query(
-            'INSERT INTO `base_price` (type, cost) VALUES (?, ?) ' +
-            'ON DUPLICATE KEY UPDATE cost = ?',
-            [liftPassType, liftPassCost, liftPassCost]);
-
+        // This does nothing, as we don't write to DB.
         res.json()
     })
     app.get('/prices', async (req, res) => {
-        // const result = (await connection.query(
-        //     'SELECT cost FROM `base_price` ' +
-        //     'WHERE `type` = ? ',
-        //     [req.query.type]))[0][0]
-
         // @ts-ignore
-        const result = await readPrices(req.query.type)
+        const result = await connection.readPrices(req.query.type)
         if (req.query.age as any < 6) {
             res.json({cost: 0})
         } else {
             if (req.query.type !== 'night') {
-                // const holidays = (await connection.query(
-                //     'SELECT * FROM `holidays`'
-                // ))[0] as mysql.RowDataPacket[];
-                const holidays = await readHolidays()
+                const holidays = await connection.readHolidays()
 
                 let isHoliday;
                 let reduction = 0
