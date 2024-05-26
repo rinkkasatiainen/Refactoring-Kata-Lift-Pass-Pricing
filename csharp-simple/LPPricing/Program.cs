@@ -38,7 +38,7 @@ app.MapGet("/weatherforecast", () =>
     .WithName("GetWeatherForecast")
     .WithOpenApi();
 
-Prices.mapRoutes(app);
+GetPrices.mapRoutes(app);
 
 app.Run();
 

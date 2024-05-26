@@ -1,80 +1,120 @@
 using System.Collections;
 using System.Globalization;
+using System.Text.Json;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Primitives;
 using MySql.Data.MySqlClient;
+using static Microsoft.AspNetCore.Http.Results;
+using static Microsoft.AspNetCore.Http.TypedResults;
+using File = System.IO.File;
+using Ok = Microsoft.AspNetCore.Http.HttpResults.Ok;
 
 namespace LPPricing;
 
+public record Price
+{
+    public int cost { get; set; }
+};
+
 public class Prices
+{
+    public Price jour { get; set; }
+    public Price night { get; set; }
+
+    public double GetPrice(StringValues stringValues)
+    {
+        if (stringValues.Equals("1jour"))
+        {
+            return jour.cost;
+        }
+
+        return night.cost;
+    }
+}
+
+public class Holiday
+{
+    public string holiday { get; set; }
+}
+
+public class Result
+{
+    public int cost { get; set; }
+}
+
+public class DB
+{
+    public Prices prices { get; set; }
+    public List<Holiday> holidays { get; set; }
+}
+
+class RequestParams
+{
+    public string type;
+    public int age;
+    public string date;
+}
+
+public class GetPrices
 {
     public static void mapRoutes(WebApplication app)
     {
-        var connection = new MySqlConnection
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "prices_db.json");
+        string text = File.ReadAllText(path);
+        var dbContent = JsonSerializer.Deserialize<DB>(text);
+
+        // var connection = new MySqlConnection
+        // {
+        // ConnectionString = @"Database=lift_pass;Data Source=localhost;User Id=root;Password=mysql"
+        // };
+        // connection.Open();
+
+        app.MapPut("/prices", async ([FromQuery(Name = "type")] _type) =>
         {
-            ConnectionString = @"Database=lift_pass;Data Source=localhost;User Id=root;Password=mysql"
-        };
-        connection.Open();
-
-        app.MapPut("/prices", (context) =>
-        {
-            int liftPassCost = Int32.Parse(context.Request.Query["cost"]);
-            string liftPassType = context.Request.Query["type"];
-
-            using (var command = new MySqlCommand( //
-                       "INSERT INTO base_price (type, cost) VALUES (@type, @cost) " + //
-                       "ON DUPLICATE KEY UPDATE cost = @cost;", connection))
-            {
-                command.Parameters.AddWithValue("@type", liftPassType);
-                command.Parameters.AddWithValue("@cost", liftPassCost);
-                command.Prepare();
-                command.ExecuteNonQuery();
-            }
-
-            return Task.FromResult("");
+            var result = await Task.FromResult("ok");
+            return;
+            // return Results.Ok();
         });
 
-        app.MapGet("/prices", (context) =>
+        app.MapGet("/prices2", async (string? type, int? age, string? date
+        ) =>
         {
-            int? age = (string)context.Request.Query["age"] != null ? Int32.Parse(context.Request.Query["age"]) : null;
+            return new Result() { cost = 1 };
+        });
 
-            double basePrice;
-            using (var costCmd = new MySqlCommand( //
-                       "SELECT cost FROM base_price " + //
-                       "WHERE type = @type", connection))
-            {
-                costCmd.Parameters.AddWithValue("@type", context.Request.Query["type"]);
-                costCmd.Prepare();
-                basePrice = (int)costCmd.ExecuteScalar();
-            }
+        app.MapGet("/prices", async (string? type, int? age, string? date
+        ) =>
+        {
+            double basePrice = dbContent.prices.GetPrice(type);
 
             if (age != null && age < 6)
             {
-                return Task.FromResult("{ \"cost\": 0}");
+                return new Result() { cost = 0 };
             }
             else
             {
-                if (!"night".Equals(context.Request.Query["type"]))
+                if (!"night".Equals(type))
                 {
                     var holidaysDates = new ArrayList();
-                    using (var holidayCmd = new MySqlCommand( //
-                               "SELECT * FROM holidays", connection))
+                    // using (var holidayCmd = new MySqlCommand( //
+                    // "SELECT * FROM holidays", connection))
+                    // {
+                    // holidayCmd.Prepare();
+                    foreach (var holiday in dbContent.holidays)
                     {
-                        holidayCmd.Prepare();
-                        using (var holidays = holidayCmd.ExecuteReader())
-                        {
-                            while (holidays.Read())
-                            {
-                                holidaysDates.Add(holidays.GetDateTime("holiday"));
-                            }
-                        }
+                        var _date = holiday.holiday + " 00:00";
+                        var d = DateTime.ParseExact(_date, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+                        holidaysDates.Add(d);
                     }
 
                     int reduction = 0;
                     var isHoliday = false;
                     foreach (DateTime holiday in holidaysDates)
                     {
-                        if ((string)context.Request.Query["date"] != null)
+                        if (date != null)
                         {
-                            DateTime d = DateTime.ParseExact(context.Request.Query["date"], "yyyy-MM-dd",
+                            DateTime d = DateTime.ParseExact(date, "yyyy-MM-dd",
                                 CultureInfo.InvariantCulture);
                             if (d.Year == holiday.Year &&
                                 d.Month == holiday.Month &&
@@ -85,9 +125,9 @@ public class Prices
                         }
                     }
 
-                    if ((string)context.Request.Query["date"] != null)
+                    if (date != null)
                     {
-                        DateTime d = DateTime.ParseExact(context.Request.Query["date"], "yyyy-MM-dd",
+                        DateTime d = DateTime.ParseExact(date, "yyyy-MM-dd",
                             CultureInfo.InvariantCulture);
                         if (!isHoliday && (int)d.DayOfWeek == 1)
                         {
@@ -98,46 +138,47 @@ public class Prices
                     // TODO apply reduction for others
                     if (age != null && age < 15)
                     {
-                        return Task.FromResult("{ \"cost\": " + (int)Math.Ceiling(basePrice * .7) + "}");
+                        return new Result() { cost = (int)Math.Ceiling(basePrice * .7) };
                     }
                     else
                     {
                         if (age == null)
                         {
                             double cost = basePrice * (1 - reduction / 100.0);
-                            return Task.FromResult("{ \"cost\": " + (int)Math.Ceiling(cost) + "}");
+                            return new Result() { cost = (int)Math.Ceiling(cost) };
                         }
                         else
                         {
                             if (age > 64)
                             {
                                 double cost = basePrice * .75 * (1 - reduction / 100.0);
-                                return Task.FromResult("{ \"cost\": " + (int)Math.Ceiling(cost) + "}");
+                                return new Result() { cost = (int)Math.Ceiling(cost) };
                             }
                             else
                             {
                                 double cost = basePrice * (1 - reduction / 100.0);
-                                return Task.FromResult("{ \"cost\": " + (int)Math.Ceiling(cost) + "}");
+                                return new Result() { cost = (int)Math.Ceiling(cost) };
                             }
                         }
                     }
                 }
+
                 else
                 {
                     if (age != null && age >= 6)
                     {
                         if (age > 64)
                         {
-                            return Task.FromResult("{ \"cost\": " + (int)Math.Ceiling(basePrice * .4) + "}");
+                            return new Result() { cost = (int)Math.Ceiling(basePrice * .4) };
                         }
                         else
                         {
-                            return Task.FromResult("{ \"cost\": " + basePrice + "}");
+                            return new Result() { cost = (int)basePrice };
                         }
                     }
                     else
                     {
-                        return Task.FromResult("{ \"cost\": 0}");
+                        return new Result() { cost = 0 };
                     }
                 }
             }
