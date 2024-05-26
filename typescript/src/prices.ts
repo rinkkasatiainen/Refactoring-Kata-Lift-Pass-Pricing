@@ -1,8 +1,8 @@
 import express from "express";
 import {mimicDbConnection} from "./infra/db";
 import {getPrice} from "./domain/calculate-price";
-import {TicketPrice} from "../domain/types";
 import {getBasePrice, getHolidays} from "./infra/repository";
+import {TicketPrice} from "./domain/types";
 
 
 async function createApp() {

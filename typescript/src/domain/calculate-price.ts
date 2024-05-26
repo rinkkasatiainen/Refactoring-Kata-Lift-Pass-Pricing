@@ -1,5 +1,5 @@
 // Domain functions
-import {GetBasePrice, GetHolidays, TicketPrice} from "../../domain/types";
+import {GetBasePrice, GetHolidays, TicketPrice} from "./types";
 
 type CalculatesPrice = (liftPassType: string, age: number, date: string) => Promise<TicketPrice>
 
@@ -50,7 +50,7 @@ export const getPrice:
                     }
                 }
             } else {
-                if (age >= 6) {
+                if (age === undefined || age >= 6) {
                     if (age > 64) {
                         return {cost: Math.ceil(basePrice.cost * .4)}
                     } else {
