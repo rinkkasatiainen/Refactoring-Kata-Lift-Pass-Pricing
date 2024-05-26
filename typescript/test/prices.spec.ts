@@ -66,9 +66,9 @@ describe('prices', () => {
 
     [
         {age: 15, expectedCost: 35, date: '2019-02-22'},
-        {age: 15, expectedCost: 35, date: '2019-02-25'},
+        {age: 15, expectedCost: 35, date: '2024-05-28'}, // monday on holiday
         {age: 15, expectedCost: 23, date: '2019-03-11'},
-        {age: 65, expectedCost: 18, date: '2019-03-11'}, // monday
+        {age: 65, expectedCost: 18, date: '2024-03-11'}, // monday
     ]
         .forEach(({age, expectedCost, date}) => {
             it('works for monday deals', async () => {
