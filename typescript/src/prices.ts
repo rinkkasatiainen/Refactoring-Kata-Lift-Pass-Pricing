@@ -1,73 +1,45 @@
 import express from "express";
-import {mimicDbConnection} from "./db";
+import {mimicDbConnection} from "./infra/db";
+import {getPrice} from "./domain/calculate-price";
+import {TicketPrice} from "../domain/types";
+import {getBasePrice, getHolidays} from "./infra/repository";
+
 
 async function createApp() {
+
     const app = express()
 
-    const connection = await mimicDbConnection();
+    const connection = await mimicDbConnection()
 
+    // These look a lot like repositories
+    const basePriceFor = getBasePrice(connection)
+    const listHolidays = getHolidays(connection)
+
+    // This looks like domain concept
+    const priceForTicket = getPrice(basePriceFor, listHolidays)
+
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     app.put('/prices', async (req, res) => {
-        // This does nothing, as we don't write to DB.
+        // This does nothing here
+
         res.json()
     })
+
+
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     app.get('/prices', async (req, res) => {
+        // TODO: precondition check to see all data is given in the request.
+        // TODO: TS checks says all these are actually needed by the code. And there is an unnecessary if-clause.
         // @ts-ignore
-        const result = await connection.readPrices(req.query.type)
-        if (req.query.age as any < 6) {
-            res.json({cost: 0})
-        } else {
-            if (req.query.type !== 'night') {
-                const holidays = await connection.readHolidays()
+        const liftPassType: string = req.query.type
+        // @ts-ignore
+        const age: number = req.query.age
+        // @ts-ignore
+        const date: string = req.query.date
 
-                let isHoliday;
-                let reduction = 0
-                for (let row of holidays) {
-                    let holiday = row.holiday
-                    if (req.query.date) {
-                        let d = new Date(req.query.date as string)
-                        if (d.getFullYear() === holiday.getFullYear()
-                            && d.getMonth() === holiday.getMonth()
-                            && d.getDate() === holiday.getDate()) {
-
-                            isHoliday = true
-                        }
-                    }
-
-                }
-
-                if (!isHoliday && new Date(req.query.date as string).getDay() === 1) {
-                    reduction = 35
-                }
-
-                // TODO apply reduction for others
-                if (req.query.age as any < 15) {
-                    res.json({cost: Math.ceil(result.cost * .7)})
-                } else {
-                    if (req.query.age === undefined) {
-                        let cost = result.cost * (1 - reduction / 100)
-                        res.json({cost: Math.ceil(cost)})
-                    } else {
-                        if (req.query.age as any > 64) {
-                            let cost = result.cost * .75 * (1 - reduction / 100)
-                            res.json({cost: Math.ceil(cost)})
-                        } else {
-                            let cost = result.cost * (1 - reduction / 100)
-                            res.json({cost: Math.ceil(cost)})
-                        }
-                    }
-                }
-            } else {
-                if (req.query.age as any >= 6) {
-                    if (req.query.age as any > 64) {
-                        res.json({cost: Math.ceil(result.cost * .4)})
-                    } else {
-                        res.json(result)
-                    }
-                } else {
-                    res.json({cost: 0})
-                }
-            }
-        }
+        // This looks like a Pure Function that has some domain logic.
+        const result: TicketPrice = await priceForTicket(liftPassType, age, date)
+        res.json(result)
     })
     return {app, connection}
 }

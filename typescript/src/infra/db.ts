@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-interface DBOperations {
+export interface DBOperations {
     readPrices: (type: string) => Promise<{ cost: number }>
     readHolidays: () => Promise<Array<{ holiday: Date }>>
 }
