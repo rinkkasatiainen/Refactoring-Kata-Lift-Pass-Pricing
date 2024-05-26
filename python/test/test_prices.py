@@ -5,7 +5,7 @@ import requests
 from datetime import datetime
 import time
 
-from prices import app
+from src.prices import app
 
 TEST_PORT = 3006
 
@@ -81,7 +81,7 @@ def test_works_for_night_passes(lift_pass_pricing_app, age, expectedCost):
 @pytest.mark.parametrize(
     "age,expectedCost,ski_date", [
         (15, 35, datetime.fromisoformat('2019-02-22')),
-        (15, 35, datetime.fromisoformat('2019-02-25')), # monday, holiday
+        (15, 35, datetime.fromisoformat('2024-05-27')), # monday, holiday
         (15, 23, datetime.fromisoformat('2019-03-11')), # monday
         (65, 18, datetime.fromisoformat('2019-03-11')),  # monday
     ])
