@@ -10,12 +10,6 @@ from src.db import mimic_db_operations
 
 app = Flask("lift-pass-pricing")
 
-connection_options = {
-    "host": 'localhost',
-    "user": 'root',
-    "database": 'lift_pass',
-    "password": 'mysql'}
-
 db_like = None
 
 f = open(os.path.join(os.path.realpath(

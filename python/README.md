@@ -1,6 +1,7 @@
 # Python version of Lift Pass Pricing Kata
 
-As with the other language versions, this exercise requires a database. There is a description in the [top level README](../README.md) of how to set up MySQL. If you don't have that, this version should fall back on sqlite3, and create a local database file 'lift_pass.db' in the directory where you run the application. Unfortunately the code doesn't actually work properly with sqlite3, so you'll have to adjust the SQL statements in prices.py.
+This is originally from [Johan Martinsson](https://github.com/martinsson/Refactoring-Kata-Lift-Pass-Pricing), and adapted
+here to change a DB and docker into purely based on accessing file system.
 
 For this python version you will also need to install the dependencies. I recommend you install them in a virtual environment like this:
 
@@ -8,14 +9,21 @@ For this python version you will also need to install the dependencies. I recomm
 
 Check the [Python documentation](https://docs.python.org/3/library/venv.html) for how to activate this environment on your platform. Then install the requirements:
 
-    python -m pip install -r requirements.txt
+## Requirements (optional, but useful)
+Install `virtualenv` and `pipenv` for your computer. This way anything we install on this repository does not mess up any other Python project.
 
-You can start the application like this:
 
-    cd src 
-    python -m prices
+## Before the first session
 
-Note there is no webpage on the default url - try this url as an example to check it's running: http://127.0.0.1:3005/prices?type=1jour
+Make sure you can run the test cases. Steps for doing it:
+
+ - clone this repository
+ - run `pipenv shell` on the root of the repo
+ - run `pip install -r requirements.txt`
+ - run `pipenv install` on the root of the repo (install dependencies)
+ - run `pytest` on the root of the repo, or if that does not work
+
+## The following instructions from base repo:
 
 You can run the tests with pytest:
 
