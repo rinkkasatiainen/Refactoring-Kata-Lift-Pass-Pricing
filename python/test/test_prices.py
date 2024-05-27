@@ -5,7 +5,8 @@ import requests
 from datetime import datetime
 import time
 
-from src.prices import app
+# from src.prices import app
+from src.app import app
 
 TEST_PORT = 3006
 
