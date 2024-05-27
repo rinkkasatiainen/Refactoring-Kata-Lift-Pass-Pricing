@@ -64,25 +64,6 @@ public class GetPrices
         string text = File.ReadAllText(path);
         var dbContent = JsonSerializer.Deserialize<DB>(text);
 
-        // var connection = new MySqlConnection
-        // {
-        // ConnectionString = @"Database=lift_pass;Data Source=localhost;User Id=root;Password=mysql"
-        // };
-        // connection.Open();
-
-        app.MapPut("/prices", async ([FromQuery(Name = "type")] _type) =>
-        {
-            var result = await Task.FromResult("ok");
-            return;
-            // return Results.Ok();
-        });
-
-        app.MapGet("/prices2", async (string? type, int? age, string? date
-        ) =>
-        {
-            return new Result() { cost = 1 };
-        });
-
         app.MapGet("/prices", async (string? type, int? age, string? date
         ) =>
         {
@@ -97,10 +78,6 @@ public class GetPrices
                 if (!"night".Equals(type))
                 {
                     var holidaysDates = new ArrayList();
-                    // using (var holidayCmd = new MySqlCommand( //
-                    // "SELECT * FROM holidays", connection))
-                    // {
-                    // holidayCmd.Prepare();
                     foreach (var holiday in dbContent.holidays)
                     {
                         var _date = holiday.holiday + " 00:00";
