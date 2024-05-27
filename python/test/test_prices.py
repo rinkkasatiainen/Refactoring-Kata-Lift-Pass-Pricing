@@ -88,5 +88,3 @@ def test_works_for_night_passes(lift_pass_pricing_app, age, expectedCost):
 def test_works_for_monday_deals(lift_pass_pricing_app, age, expectedCost, ski_date):
     response = requests.get(lift_pass_pricing_app + "/prices", params={'type': '1jour', 'age': age, 'date': ski_date})
     assert response.json() == {'cost': expectedCost}
-
-# TODO 2-4, and 5, 6 day pass

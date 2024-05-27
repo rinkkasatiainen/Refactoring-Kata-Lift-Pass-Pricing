@@ -1,12 +1,12 @@
 import json
 import math
 import os
-import sys
+from datetime import datetime
 
 from flask import Flask
 from flask import request
-from datetime import datetime
-from src.db import create_lift_pass_db_connection
+
+from src.db import mimic_db_operations
 
 app = Flask("lift-pass-pricing")
 
@@ -16,7 +16,7 @@ connection_options = {
     "database": 'lift_pass',
     "password": 'mysql'}
 
-connection = None
+db_like = None
 
 f = open(os.path.join(os.path.realpath(
     os.path.join(os.getcwd(), os.path.dirname(__file__))), "prices_db.json"), "r")
@@ -31,31 +31,22 @@ data = {
 @app.route("/prices", methods=['GET', 'PUT'])
 def prices():
     res = {}
-    global connection
-    if connection is None:
-        connection = create_lift_pass_db_connection(connection_options)
+    global db_like
+    if db_like is None:
+        db_like = mimic_db_operations()
     if request.method == 'PUT':
-        lift_pass_cost = request.args["cost"]
-        lift_pass_type = request.args["type"]
-        cursor = connection.cursor()
-        cursor.execute('INSERT INTO `base_price` (type, cost) VALUES (?, ?) ' +
-                       'ON DUPLICATE KEY UPDATE cost = ?', (lift_pass_type, lift_pass_cost, lift_pass_cost))
         return {}
     elif request.method == 'GET':
-        result = data.get('prices').get(request.args['type'])
+        result = db_like.read_price( request.args['type'])
 
         if 'age' in request.args and request.args.get('age', type=int) < 6:
             res["cost"] = 0
         else:
             if "type" in request.args and request.args["type"] != "night":
-                cursor = connection.cursor()
-                cursor.execute('SELECT * FROM holidays')
                 is_holiday = False
                 reduction = 0
-                list_of_holidays = data.get("holidays")
+                list_of_holidays = db_like.list_holidays()
                 for holiday in list_of_holidays:
-                # for row in cursor.fetchall():
-                #     holiday = row[0]
                     if "date" in request.args:
                         d = datetime.fromisoformat(request.args["date"])
                         if d.year == holiday.year and d.month == holiday.month and holiday.day == d.day:
